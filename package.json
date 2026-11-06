@@ -1,0 +1,1 @@
+{"name":"uluks-porsche-garage","private":true,"type":"module","scripts":{"dev":"node serve.mjs","start":"node serve.mjs","check":"node check.mjs"}}

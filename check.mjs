@@ -1,0 +1,7 @@
+import {readFile,readdir,stat} from 'node:fs/promises';
+import {resolve,dirname,extname} from 'node:path';
+import {spawnSync} from 'node:child_process';
+const root=resolve('dist');let bytes=0,files=0;
+async function walk(dir){for(const name of await readdir(dir)){const p=resolve(dir,name),s=await stat(p);if(s.isDirectory()){await walk(p);continue;}files++;bytes+=s.size;if(extname(p)==='.js'){const run=spawnSync(process.execPath,['--check',p],{windowsHide:true,encoding:'utf8'});if(run.status!==0)throw Error(run.stderr);const source=await readFile(p,'utf8');for(const match of source.matchAll(/(?:from\s*|import\s*\()['"](\.[^'"]+)['"]/g)){await stat(resolve(dirname(p),match[1].split(/[?#]/)[0]));}}}}
+await walk(root);const html=await readFile(resolve(root,'index.html'),'utf8');if((html.match(/<h1[>\s]/g)||[]).length!==1)throw Error('Expected one H1');if(!html.includes('lang="tr"'))throw Error('Missing language');const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);if(new Set(ids).size!==ids.length)throw Error('Duplicate HTML IDs');for(const tag of ['main','body','html'])if((html.match(new RegExp('<'+tag+'[>\\s]','g'))||[]).length!==1)throw Error('Expected one '+tag);for(const match of html.matchAll(/(?:src|href)="(\/[^"#?]+)"/g)){await stat(resolve(root,'.'+match[1]));}
+console.log(JSON.stringify({files,bytes,megabytes:Number((bytes/1048576).toFixed(2)),javascript:'syntax and relative imports pass',html:'Turkish, one H1, static assets present'},null,2));
